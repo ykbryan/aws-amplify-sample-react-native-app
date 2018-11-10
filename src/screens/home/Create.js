@@ -55,7 +55,7 @@ export default class Create extends React.Component {
     const CreateEventMutation = `mutation createEvent {
         createEvent(input:{
           description: "${this.state.description}"
-          startAt: "${dateTimeStart}"
+          startAt: ${dateTimeStart}
           title: "${this.state.title}"
           eventUserId: "${this.state.userId}"
         }) {
