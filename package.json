@@ -1,0 +1,23 @@
+{
+  "name": "empty-project-template",
+  "main": "node_modules/expo/AppEntry.js",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "eject": "expo eject"
+  },
+  "dependencies": {
+    "aws-amplify": "^1.1.6",
+    "aws-amplify-react-native": "^2.0.6",
+    "expo": "^30.0.1",
+    "moment": "^2.22.2",
+    "native-base": "^2.8.1",
+    "react": "16.3.1",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-30.0.0.tar.gz",
+    "react-native-gifted-chat": "^0.4.3",
+    "react-native-modal-datetime-picker": "^6.0.0",
+    "react-navigation": "^2.17.0"
+  }
+}
