@@ -33,33 +33,8 @@ export default class Home extends React.Component {
         user: user,
         accessToken: user.signInUserSession.accessToken.jwtToken.substring(0, 10)
       });
-      this.getUserInfo()
     } catch (err) {
       console.log(err);
-    }
-  }
-  getUserInfo = async () => {
-    let userInfo = await Auth.currentUserInfo();
-    const { id, username } = userInfo
-    const { email, phone_number } = userInfo.attributes
-    // console.log(id, username, email, phone_number);
-
-    const CreateUserMutation = `mutation createUser {
-      createUser(input:{
-        email: "${email}"
-        name: "${username}"
-        phone_number: "${phone_number}"
-        username: "${username}"
-      }) {
-        id
-      }
-    }`;
-
-    try {
-      await API.graphql(graphqlOperation(CreateUserMutation));
-    }
-    catch (e) {
-      console.log(e)
     }
   }
   getAllEvents = async () => {
