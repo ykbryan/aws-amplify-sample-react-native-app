@@ -11,6 +11,7 @@
   "dependencies": {
     "aws-amplify": "^1.1.6",
     "aws-amplify-react-native": "^2.0.6",
+    "babel-preset-react": "^6.24.1",
     "expo": "^30.0.1",
     "moment": "^2.22.2",
     "native-base": "^2.8.1",
