@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "react-amplify-blk71",
+    "name": "react-native-amplify-app",
     "description": "This project is really great.",
-    "slug": "react-amplify-blk71",
+    "slug": "react-native-amplify-app",
     "privacy": "public",
     "sdkVersion": "30.0.0",
     "platforms": [
