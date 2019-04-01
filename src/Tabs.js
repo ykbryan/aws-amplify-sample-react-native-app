@@ -1,5 +1,5 @@
 import React from "react";
-import { createBottomTabNavigator } from "react-navigation";
+import { createBottomTabNavigator, createAppContainer } from "react-navigation";
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // screens
@@ -9,7 +9,7 @@ import AccountScreen from "./screens/account/index";
 // Refer to https://reactnavigation.org/docs/en/tab-based-navigation.html for more information about the tab navigation options
 // New tab navigation: https://reactnavigation.org/docs/en/material-bottom-tab-navigator.html
 
-export default (MainScreenNavigator = createBottomTabNavigator(
+export default createAppContainer(MainScreenNavigator = createBottomTabNavigator(
   {
     Home: {
       screen: HomeScreen,

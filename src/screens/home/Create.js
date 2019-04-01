@@ -3,6 +3,7 @@ import { Keyboard } from "react-native";
 import { Text, View, Content, Button, Input } from "native-base";
 import { NavigationActions } from 'react-navigation';
 import { Auth, API, graphqlOperation } from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
 import moment from 'moment';
 import DateTimePicker from 'react-native-modal-datetime-picker';
 //ref: https://github.com/naveenkumarsangwan/react-native-modal-datetime-picker
@@ -29,7 +30,8 @@ export default class Create extends React.Component {
     try {
       const user = await Auth.currentAuthenticatedUser();
       this.setState({
-        userId: user.attributes.sub
+        userId: user.attributes.sub,
+        user: user
       });
     } catch (err) {
       console.log(err);
@@ -64,7 +66,19 @@ export default class Create extends React.Component {
     }`;
 
     try {
-      await API.graphql(graphqlOperation(CreateEventMutation));
+      var response = await API.graphql(graphqlOperation(CreateEventMutation));
+      console.log(response);
+
+      let { user } = this.state;
+
+      Analytics.record({
+        name: 'createdEvent',
+        attributes: {
+          username: user.username,
+          userId: user.attributes.sub,
+          eventId: response.data.createEvent.id
+        }
+      });
     }
     catch (e) {
       console.log(e)

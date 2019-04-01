@@ -3,10 +3,11 @@ import moment from 'moment';
 import { ScrollView, View, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
 import { Text, Button } from "native-base";
 import { API, graphqlOperation, Auth } from "aws-amplify";
+import Analytics from '@aws-amplify/analytics';
 
 export default class Home extends React.Component {
   static navigationOptions = {
-    title: 'JioJio',
+    title: 'AWS Demo',
   }
   constructor(props) {
     super(props);
@@ -20,9 +21,30 @@ export default class Home extends React.Component {
     this.getUser();
     this.getAllEvents();
   }
+  componentWillMount() {
+    let { user } = this.state;
+
+    if (user.username) {
+      Analytics.record({
+        name: 'appRendered',
+        attributes: {
+          username: user.username,
+          userId: user.attributes.sub
+        }
+      });
+    }
+  }
   refreshEvents = () => {
     this.setState({
       isLoading: true,
+    });
+    let { user } = this.state;
+    Analytics.record({
+      name: 'refreshEvents',
+      attributes: {
+        username: user.username,
+        userId: user.attributes.sub
+      }
     });
     this.getAllEvents();
   }
@@ -45,11 +67,10 @@ export default class Home extends React.Component {
       var response = await API.graphql(graphqlOperation(AllEventsQuery));
     }
     catch (e) {
-      // var accessToken = signInUserSession.accessToken.jwtToken;
       console.log(e)
     }
     this.setState({
-      events: response.data.listEvents.items,
+      events: response.data.searchEvents.items,
       isLoading: false,
     });
   }
@@ -108,12 +129,28 @@ export default class Home extends React.Component {
     );
   }
   handleNewEvent = () => {
+    let { user } = this.state;
+    Analytics.record({
+      name: 'createEvent',
+      attributes: {
+        username: user.username,
+        userId: user.attributes.sub
+      }
+    });
     this.props.navigation.push("Create", {
       updateHomeEvents: this.refreshEvents.bind(this),
     });
   }
   handleViewEvent = (event) => {
     let { user } = this.state;
+    Analytics.record({
+      name: 'viewEvent',
+      attributes: {
+        username: user.username,
+        userId: user.attributes.sub,
+        eventId: event.id
+      }
+    });
     this.props.navigation.navigate("EventDetail", {
       event: event,
       user: user,
@@ -137,7 +174,7 @@ export default class Home extends React.Component {
             </Button>
           </View>
           <Text style={{ fontSize: 24, fontWeight: '700' }}>
-            Don't say boh jio
+            Meetups Available
           </Text>
           <Text style={{ fontSize: 12, fontWeight: '100' }}>
             Join, Rate and Chat about meetups

@@ -1,5 +1,6 @@
 import React from "react";
 import { API, graphqlOperation } from 'aws-amplify';
+import Analytics from '@aws-amplify/analytics';
 import { GiftedChat } from 'react-native-gifted-chat'
 
 export default class ChatRoom extends React.Component {
@@ -20,9 +21,18 @@ export default class ChatRoom extends React.Component {
     }
   }
   componentDidMount() {
-    let { event } = this.state;
+    let { user, event } = this.state;
     this.getChatByEventId(event.id);
     this.subscribeToChatByEventId(event.id);
+
+    Analytics.record({
+      name: 'visitChat',
+      attributes: {
+        username: user.username,
+        userId: user.attributes.sub,
+        eventId: event.id
+      }
+    });
   }
   componentWillUnmount() {
     try {
@@ -70,7 +80,7 @@ export default class ChatRoom extends React.Component {
     var response = await API.graphql(graphqlOperation(getChatsByEventId));
     var rawMessages = response.data.getEvent.chats.items;
     rawMessages.sort(function (a, b) {
-      return (Date.parse(a.CreateAt) <= Date.parse(b.CreateAt)) ? 1 : -1;
+      return (a.createdAt <= b.createdAt) ? 1 : -1;
     });
     this.appendToGiftedMessage(
       this.formatRawMessagesToGiftedMessages(rawMessages)
@@ -78,10 +88,10 @@ export default class ChatRoom extends React.Component {
   }
   subscribeToChatByEventId = async (eventId) => {
     // TODO: create a subscription to subscribe to new message
-    const subscribeToNewChat = ``;
+    let subscribeToNewChat = ``;
     try {
       let this2 = this;
-      const subscription = API.graphql(graphqlOperation(subscribeToNewChat)).subscribe({
+      let subscription = API.graphql(graphqlOperation(subscribeToNewChat)).subscribe({
         next: (response) => {
           let newMessageFromResponse = response.value.data.onCreateChat;
           console.log(newMessageFromResponse);
@@ -131,6 +141,17 @@ export default class ChatRoom extends React.Component {
   onSend = (newMessages = []) => {
     // this.appendToGiftedMessage(newMessages);
     this.saveMessage(this.state.newMessage);
+
+    let { user, event } = this.state;
+
+    Analytics.record({
+      name: 'addChat',
+      attributes: {
+        username: user.username,
+        userId: user.attributes.sub,
+        eventId: event.id
+      }
+    });
   }
   appendToGiftedMessage = (newMessages) => {
     this.setState(previousState => ({

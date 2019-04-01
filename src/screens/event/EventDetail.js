@@ -60,9 +60,9 @@ export default class EventDetail extends React.Component {
   deleteEvent = async () => {
     let { event } = this.state;
     // TODO: create a mutation to delete the event
-    const CreateEventMutation = ``;
+    const deleteEventMutation = ``;
     try {
-      await API.graphql(graphqlOperation(CreateEventMutation));
+      await API.graphql(graphqlOperation(deleteEventMutation));
     }
     catch (e) {
       console.log(e)
