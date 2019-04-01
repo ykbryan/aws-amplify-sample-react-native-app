@@ -1,10 +1,9 @@
 {
   "expo": {
-    "name": "react-native-amplify-app",
-    "description": "This project is really great.",
+    "name": "RN Amplify App",
     "slug": "react-native-amplify-app",
     "privacy": "public",
-    "sdkVersion": "30.0.0",
+    "sdkVersion": "32.0.0",
     "platforms": [
       "ios",
       "android"
