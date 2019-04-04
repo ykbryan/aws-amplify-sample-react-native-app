@@ -70,7 +70,7 @@ export default class Home extends React.Component {
       console.log(e)
     }
     this.setState({
-      events: response.data.searchEvents.items,
+      events: response.data.listEvents.items,
       isLoading: false,
     });
   }
