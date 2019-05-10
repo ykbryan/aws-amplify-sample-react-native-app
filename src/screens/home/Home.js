@@ -2,12 +2,12 @@ import React from "react";
 import moment from 'moment';
 import { ScrollView, View, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
 import { Text, Button } from "native-base";
-import { API, graphqlOperation, Auth } from "aws-amplify";
-import Analytics from '@aws-amplify/analytics';
+import { recordEvent, registerEndpoint, getUser } from '../../aws.js';
+import { getAllEvents } from '../../graphql/events.js';
 
 export default class Home extends React.Component {
   static navigationOptions = {
-    title: 'AWS Demo',
+    title: 'AWS Events',
   }
   constructor(props) {
     super(props);
@@ -15,62 +15,66 @@ export default class Home extends React.Component {
       events: [],
       isLoading: true,
       user: {},
+      userAttributes: {},
     }
   }
   componentDidMount() {
-    this.getUser();
     this.getAllEvents();
   }
   componentWillMount() {
-    let { user } = this.state;
-
-    if (user.username) {
-      Analytics.record({
-        name: 'appRendered',
-        attributes: {
-          username: user.username,
-          userId: user.attributes.sub
-        }
-      });
-    }
+    this.getUser();
   }
   refreshEvents = () => {
     this.setState({
       isLoading: true,
     });
-    let { user } = this.state;
-    Analytics.record({
-      name: 'refreshEvents',
-      attributes: {
-        username: user.username,
-        userId: user.attributes.sub
-      }
-    });
+    recordEvent(
+      'refreshEvents',
+      this.state.userAttributes
+    );
+    recordEvent('GeneratedTestEvent');
     this.getAllEvents();
   }
   getUser = async () => {
     try {
-      const user = await Auth.currentAuthenticatedUser();
+      const user = await getUser();
       this.setState({
         user: user,
-        accessToken: user.signInUserSession.accessToken.jwtToken.substring(0, 10)
+        accessToken: user.signInUserSession.accessToken.jwtToken.substring(0, 10),
+        username: user.username,
+        userId: user.attributes.sub,
       });
+      this.registerUser(user);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
+    }
+  }
+  registerUser = async (user) => {
+    if (user.username) {
+      let data = {
+        Name: user.username,
+        Email: user.attributes.email, //user.attributes.phone_number
+        Role: "user",
+      }
+      registerEndpoint(data);
     }
   }
   getAllEvents = async () => {
-    // TODO: create a query to list all events
-    const AllEventsQuery = ``;
-
+    const ts = parseInt(new Date().getTime() / 1000);
+    var response = false;
     try {
-      var response = await API.graphql(graphqlOperation(AllEventsQuery));
+      response = await getAllEvents(ts);
     }
     catch (e) {
       console.log(e)
     }
+
+    var events = [];
+    if (response) {
+      events = response.data.searchEvents.items;
+    }
     this.setState({
-      events: response.data.listEvents.items,
+      events: events,
       isLoading: false,
     });
   }
@@ -129,28 +133,23 @@ export default class Home extends React.Component {
     );
   }
   handleNewEvent = () => {
-    let { user } = this.state;
-    Analytics.record({
-      name: 'createEvent',
-      attributes: {
-        username: user.username,
-        userId: user.attributes.sub
-      }
-    });
+    recordEvent(
+      'createEvent',
+      this.state.userAttributes
+    );
     this.props.navigation.push("Create", {
       updateHomeEvents: this.refreshEvents.bind(this),
     });
   }
   handleViewEvent = (event) => {
     let { user } = this.state;
-    Analytics.record({
-      name: 'viewEvent',
-      attributes: {
-        username: user.username,
-        userId: user.attributes.sub,
-        eventId: event.id
-      }
-    });
+    let eventData = {
+      eventId: event.id
+    }
+    recordEvent(
+      'viewEvent',
+      { ...this.state.userAttributes, ...eventData }
+    );
     this.props.navigation.navigate("EventDetail", {
       event: event,
       user: user,
@@ -158,6 +157,10 @@ export default class Home extends React.Component {
     });
   }
   render() {
+    recordEvent(
+      'appRendered',
+      this.state.userAttributes
+    );
     return (
       <ScrollView scrollEventThrottle={16} style={{ backgroundColor: 'white', flex: 1 }}>
         <View style={{ flex: 1, paddingHorizontal: 20, paddingVertical: 10 }}>

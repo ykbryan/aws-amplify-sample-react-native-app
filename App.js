@@ -1,21 +1,22 @@
 import React from 'react';
-import { Container } from 'native-base';
 import { AppLoading, Font } from 'expo';
+import { Container } from 'native-base';
+import { withAuthenticator } from 'aws-amplify-react-native';
 
 import RootNavigator from './src/Tabs';
 
-import Amplify from 'aws-amplify';
-import aws_exports from './aws-exports';
-import { withAuthenticator } from 'aws-amplify-react-native';
-Amplify.configure(aws_exports);
+import { initializeAmplify } from './src/aws.js';
+initializeAmplify();
 
 class App extends React.Component {
   state = {
     isReady: false
   };
+
   componentWillMount() {
     this.loadFonts();
   }
+
   async loadFonts() {
     await Font.loadAsync({
       Roboto: require("native-base/Fonts/Roboto.ttf"),
@@ -24,15 +25,17 @@ class App extends React.Component {
     });
     this.setState({ isReady: true });
   }
+
   render() {
     if (!this.state.isReady) {
       return <AppLoading />;
     }
+
     return (
       <Container>
         <RootNavigator />
       </Container>
-    );
+    )
   }
 }
 

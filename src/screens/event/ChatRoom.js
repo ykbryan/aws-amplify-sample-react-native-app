@@ -1,7 +1,8 @@
 import React from "react";
-import { API, graphqlOperation } from 'aws-amplify';
-import Analytics from '@aws-amplify/analytics';
+import { recordEvent } from '../../aws.js';
 import { GiftedChat } from 'react-native-gifted-chat'
+import { getChatsByEventId } from '../../graphql/events.js';
+import { subscribeToNewChat, createChat } from '../../graphql/chats.js';
 
 export default class ChatRoom extends React.Component {
 
@@ -22,17 +23,17 @@ export default class ChatRoom extends React.Component {
   }
   componentDidMount() {
     let { user, event } = this.state;
-    this.getChatByEventId(event.id);
+    this.getChats(event.id);
     this.subscribeToChatByEventId(event.id);
 
-    Analytics.record({
-      name: 'visitChat',
-      attributes: {
+    recordEvent(
+      'visitChat',
+      {
         username: user.username,
         userId: user.attributes.sub,
         eventId: event.id
       }
-    });
+    );
   }
   componentWillUnmount() {
     try {
@@ -61,23 +62,8 @@ export default class ChatRoom extends React.Component {
       return this2.formatToGiftedMessage(msg);
     });
   }
-  getChatByEventId = async (eventId) => {
-    const getChatsByEventId = `query getEvent{
-      getEvent(id:"${eventId}") {
-        chats{
-          items{
-            id
-            content
-            user{
-              id
-              username
-            }
-            createdAt
-          }
-        }
-      }
-    }`;
-    var response = await API.graphql(graphqlOperation(getChatsByEventId));
+  getChats = async (eventId) => {
+    var response = await getChatsByEventId(eventId);
     var rawMessages = response.data.getEvent.chats.items;
     rawMessages.sort(function (a, b) {
       return (a.createdAt <= b.createdAt) ? 1 : -1;
@@ -87,11 +73,9 @@ export default class ChatRoom extends React.Component {
     );
   }
   subscribeToChatByEventId = async (eventId) => {
-    // TODO: create a subscription to subscribe to new message
-    let subscribeToNewChat = ``;
     try {
       let this2 = this;
-      let subscription = API.graphql(graphqlOperation(subscribeToNewChat)).subscribe({
+      let subscription = subscribeToNewChat().subscribe({
         next: (response) => {
           let newMessageFromResponse = response.value.data.onCreateChat;
           console.log(newMessageFromResponse);
@@ -109,27 +93,8 @@ export default class ChatRoom extends React.Component {
   }
   saveMessage = async (text) => {
     let { event, user } = this.state;
-    const CreateEventMutation = `mutation createChat {
-      createChat(input:{
-        chatUserId: "${user.attributes.sub}"
-        chatEventId: "${event.id}"
-        content: "${text}"
-      }) {
-        id
-        content
-        event {
-          id
-        }
-        user {
-          id
-          username
-        }
-        createdAt
-      }
-    }`;
-
     try {
-      await API.graphql(graphqlOperation(CreateEventMutation));
+      await createChat(user.attributes.sub, event.id, text);
       this.setCurrentText("");
     } catch (e) {
       console.log(e)
@@ -144,14 +109,14 @@ export default class ChatRoom extends React.Component {
 
     let { user, event } = this.state;
 
-    Analytics.record({
-      name: 'addChat',
-      attributes: {
+    recordEvent(
+      'addChat',
+      {
         username: user.username,
         userId: user.attributes.sub,
         eventId: event.id
       }
-    });
+    );
   }
   appendToGiftedMessage = (newMessages) => {
     this.setState(previousState => ({

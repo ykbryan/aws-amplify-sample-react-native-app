@@ -1,6 +1,7 @@
 import React from "react";
 import { Container, Thumbnail, Card, CardItem, Body, Content, Right, Button, Text, Input, Item, Label } from "native-base";
 import { Auth } from "aws-amplify";
+import { recordEvent } from '../../aws.js';
 
 export default class Account extends React.Component {
   static navigationOptions = {
@@ -17,17 +18,19 @@ export default class Account extends React.Component {
     }
   }
   componentDidMount() {
-    this.getUser();
     this.getCurrentUserInfo();
   }
+
   getUser = async () => {
     let user = await Auth.currentAuthenticatedUser();
     this.setState({ user: user })
+    return user;
   }
   getCurrentUserInfo = async () => {
     let userInfo = await Auth.currentUserInfo();
     console.log(userInfo);
     this.setState({
+      id: userInfo.id,
       username: userInfo.username,
       email: userInfo.attributes.email,
       phone_number: userInfo.attributes.phone_number,
@@ -45,6 +48,10 @@ export default class Account extends React.Component {
       'hometown': hometown,
     });
     console.log(result);
+  }
+  handleSignOut = async () => {
+    recordEvent("userSignOut");
+    Auth.signOut();
   }
   render() {
     let { username, email, phone_number, hometown } = this.state;
@@ -103,7 +110,7 @@ export default class Account extends React.Component {
           </Button>
           <Button full rounded dark
             style={{ marginTop: 10 }}
-            onPress={() => Auth.signOut()}>
+            onPress={() => this.handleSignOut()}>
             <Text>Logout</Text>
           </Button>
         </Content>

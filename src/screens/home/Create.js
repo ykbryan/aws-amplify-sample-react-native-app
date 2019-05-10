@@ -2,8 +2,8 @@ import React from "react";
 import { Keyboard } from "react-native";
 import { Text, View, Content, Button, Input } from "native-base";
 import { NavigationActions } from 'react-navigation';
-import { Auth, API, graphqlOperation } from 'aws-amplify';
-import Analytics from '@aws-amplify/analytics';
+import { recordEvent, getUser } from '../../aws.js';
+import { createEvent } from '../../graphql/events.js';
 import moment from 'moment';
 import DateTimePicker from 'react-native-modal-datetime-picker';
 //ref: https://github.com/naveenkumarsangwan/react-native-modal-datetime-picker
@@ -28,7 +28,7 @@ export default class Create extends React.Component {
   }
   getUser = async () => {
     try {
-      const user = await Auth.currentAuthenticatedUser();
+      const user = await getUser();
       this.setState({
         userId: user.attributes.sub,
         user: user
@@ -39,7 +39,6 @@ export default class Create extends React.Component {
   }
 
   // create the event and use AppSync to store this in DynamoDB
-
   handlePress = async () => {
     let { userId } = this.state;
     if (!userId) {
@@ -47,43 +46,31 @@ export default class Create extends React.Component {
       this.goBack();
     }
 
-    // the time in state.datetime has milliseconds, so got to remove it as 
-    //we are storing epoc timestamp in seconds
-
     var dateTimeStart = Date.parse(this.state.datetime) / 1000;
-    // var colors = ["#3be8b0", "#1aafd0", "#6a67ce", "#ffb900", "#fc636b"];
-    // var color = colors[Math.floor(Math.random() * colors.length)];
-
-    const CreateEventMutation = `mutation createEvent {
-        createEvent(input:{
-          description: "${this.state.description}"
-          startAt: ${dateTimeStart}
-          title: "${this.state.title}"
-          eventUserId: "${this.state.userId}"
-        }) {
-        id
-     }
-    }`;
 
     try {
-      var response = await API.graphql(graphqlOperation(CreateEventMutation));
+      var response = await createEvent(
+        this.state.title,
+        this.state.description,
+        dateTimeStart,
+        this.state.userId
+      );
       console.log(response);
 
       let { user } = this.state;
-
-      Analytics.record({
-        name: 'createdEvent',
-        attributes: {
+      recordEvent(
+        'createdEvent',
+        {
           username: user.username,
           userId: user.attributes.sub,
           eventId: response.data.createEvent.id
         }
-      });
+      )
     }
     catch (e) {
       console.log(e)
     }
-    this.props.navigation.state.params.updateHomeEvents();
+    // this.props.navigation.state.params.updateHomeEvents();
     this.goBack();
   }
 

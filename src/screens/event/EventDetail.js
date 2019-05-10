@@ -3,7 +3,9 @@ import moment from 'moment';
 import { ScrollView } from "react-native";
 import { NavigationActions } from 'react-navigation';
 import { View, Text, Button, Icon, List, ListItem } from 'native-base';
-import { API, graphqlOperation } from "aws-amplify";
+import { recordEvent } from '../../aws.js';
+import { getEventById, deleteEventById } from '../../graphql/events.js';
+import { deleteFollowerById } from '../../graphql/followers.js';
 
 export default class EventDetail extends React.Component {
   static navigationOptions = ({ navigation }) => ({
@@ -23,25 +25,21 @@ export default class EventDetail extends React.Component {
   }
   componentDidMount() {
     this.getFollowers();
+
+    let { event, user } = this.state;
+    recordEvent(
+      'visitEvent',
+      {
+        username: user.username,
+        userId: user.attributes.sub,
+        eventId: event.id
+      }
+    );
   }
   getFollowers = async () => {
     let { event, user } = this.state;
-    const GetEventUserJoinedByEventId = `query getEvent{
-      getEvent(id:"${event.id}") {
-        id
-        followers{
-          items{
-            id
-            user{
-              id
-              username
-            }
-          }
-        }
-      }
-    }`;
     try {
-      var response = await API.graphql(graphqlOperation(GetEventUserJoinedByEventId));
+      var response = await getEventById(event.id);
       if (response.data.getEventUserJoinedByEventId !== null) {
         let followers = response.data.getEvent.followers.items;
         let joined = followers.some(function (element) {
@@ -59,10 +57,8 @@ export default class EventDetail extends React.Component {
   }
   deleteEvent = async () => {
     let { event } = this.state;
-    // TODO: create a mutation to delete the event
-    const DeleteEventMutation = ``;
     try {
-      await API.graphql(graphqlOperation(DeleteEventMutation));
+      await deleteEventById(event.id);
     }
     catch (e) {
       console.log(e)
@@ -79,26 +75,22 @@ export default class EventDetail extends React.Component {
   }
   joinEvent = async () => {
     let { event, user, followers } = this.state;
-    const createFollowerMutation = `mutation createFollower{
-      createFollower(input:{
-        followerUserId:"${user.attributes.sub}"
-        followerEventId:"${event.id}"
-      }){
-        id
-        user{
-          id
-          username
-        }
-      }
-    }`;
     try {
-      const response = await API.graphql(graphqlOperation(createFollowerMutation));
+      const response = await createFollower(user.attributes.sub, event.id);
       if (response) {
         followers.push(response.data.createFollower);
         this.setState({
           joined: true,
           followers: followers,
         });
+        recordEvent(
+          'joinEvent',
+          {
+            username: user.username,
+            userId: user.attributes.sub,
+            eventId: event.id
+          }
+        );
       }
 
     }
@@ -107,19 +99,20 @@ export default class EventDetail extends React.Component {
     }
   }
   leaveEvent = async () => {
-    let { followers, user } = this.state;
+    let { followers, user, event } = this.state;
     let follower = followers.find(element => element.user.username === user.username);
 
-    const DeleteEventMutation = `mutation deleteFollower{
-      deleteFollower(input:{
-        id: "${follower.id}"
-      }) {
-        id
-      }
-    }`;
     try {
-      await API.graphql(graphqlOperation(DeleteEventMutation));
+      await deleteFollowerById(follower.id);
       this.setState({ joined: false });
+      recordEvent(
+        'leaveEvent',
+        {
+          username: user.username,
+          userId: user.attributes.sub,
+          eventId: event.id
+        }
+      );
       this.props.navigation.dispatch(NavigationActions.back());
     }
     catch (e) {
@@ -134,7 +127,7 @@ export default class EventDetail extends React.Component {
     return (
       <View style={{ justifyContent: 'flex-end', alignItems: 'flex-end', flexDirection: 'row' }}>
         <Button danger onPress={() => this.deleteEvent()}>
-          <Icon name='ios-trash-outline' />
+          <Icon name='ios-trash' />
           <Text>Delete Event</Text>
         </Button>
       </View>
@@ -191,7 +184,7 @@ export default class EventDetail extends React.Component {
       <ScrollView scrollEventThrottle={16} style={{ backgroundColor: 'white', flex: 1 }}>
         <View style={{ padding: 10, paddingHorizontal: 10 }}>
           <Text style={{ fontSize: 24, fontWeight: '400' }}>
-            <Icon name='ios-alert-outline' style={{ fontSize: 20 }} /> {event.title}
+            <Icon name='ios-alert' style={{ fontSize: 20 }} /> {event.title}
           </Text>
           <Text style={{ fontSize: 18, fontWeight: '200' }}>
             <Icon name='code' style={{ fontSize: 20 }} /> {event.description}
